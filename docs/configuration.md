@@ -514,6 +514,9 @@ This gets passed into the `employedBy()` function, (called `companyId`), and can
 | `SPOTIFY_CLIENT_ID`          |         |             |
 | `SPOTIFY_CLIENT_SECRET`      |         |             |
 | `SPOTIFY_SCOPES`             | user-read-email,user-read-private |             |
+| `PIPEDRIVE_ENABLE`           | false   |             |
+| `PIPEDRIVE_CLIENT_ID`        |         |             |
+| `PIPEDRIVE_CLIENT_SECRET`    |         |             |
 
 ### Storage
 

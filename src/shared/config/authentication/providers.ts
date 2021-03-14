@@ -95,6 +95,14 @@ if (castBooleanEnv('SPOTIFY_ENABLE')) {
   }
 }
 
+// Pipedrive OAuth2 provider settings
+if (castBooleanEnv('PIPEDRIVE_ENABLE')) {
+  PROVIDERS.pipedrive = {
+    clientID: process.env.PIPEDRIVE_CLIENT_ID,
+    clientSecret: process.env.PIPEDRIVE_CLIENT_SECRET
+  }
+}
+
 export { PROVIDERS }
 
 // True if at least one of the providers is enabled

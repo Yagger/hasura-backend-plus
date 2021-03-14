@@ -9,6 +9,7 @@ import apple from './apple'
 import windowslive from './windowslive'
 import linkedin from './linkedin'
 import spotify from './spotify'
+import pipedrive from './pipedrive'
 
 const initRoutes = (): Router | undefined => {
   if (AUTH_HAS_ONE_PROVIDER) {
@@ -22,6 +23,7 @@ const initRoutes = (): Router | undefined => {
     windowslive(router)
     linkedin(router)
     spotify(router)
+    pipedrive(router)
     return router
   }
 }

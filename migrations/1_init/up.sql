@@ -19,7 +19,9 @@ CREATE TABLE auth.account_providers (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     account_id uuid NOT NULL,
     auth_provider text NOT NULL,
-    auth_provider_unique_id text NOT NULL
+    auth_provider_unique_id text NOT NULL,
+    provider_access_token text,
+    provider_refresh_token text
 );
 CREATE TABLE auth.account_roles (
     id uuid DEFAULT public.gen_random_uuid() NOT NULL,
@@ -66,21 +68,19 @@ CREATE TABLE public.users (
     avatar_url text
 );
 ALTER TABLE ONLY auth.account_providers
-    ADD CONSTRAINT account_providers_account_id_auth_provider_key UNIQUE (account_id, auth_provider);
-ALTER TABLE ONLY auth.account_providers
-    ADD CONSTRAINT account_providers_auth_provider_auth_provider_unique_id_key UNIQUE (auth_provider, auth_provider_unique_id);
+    ADD CONSTRAINT account_providers_account_provider_unique_id_key UNIQUE (account_id, auth_provider, auth_provider_unique_id);
 ALTER TABLE ONLY auth.account_providers
     ADD CONSTRAINT account_providers_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY auth.account_roles
     ADD CONSTRAINT account_roles_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY auth.accounts
-    ADD CONSTRAINT accounts_email_key UNIQUE (email);
-ALTER TABLE ONLY auth.accounts
-    ADD CONSTRAINT accounts_new_email_key UNIQUE (new_email);
-ALTER TABLE ONLY auth.accounts
     ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY auth.accounts
     ADD CONSTRAINT accounts_user_id_key UNIQUE (user_id);
+ALTER TABLE ONLY auth.accounts
+    ADD CONSTRAINT accounts_email_key UNIQUE (email);
+ALTER TABLE ONLY auth.accounts
+    ADD CONSTRAINT accounts_new_email_key UNIQUE (new_email);
 ALTER TABLE ONLY auth.providers
     ADD CONSTRAINT providers_pkey PRIMARY KEY (provider);
 ALTER TABLE ONLY auth.refresh_tokens
@@ -113,4 +113,4 @@ INSERT INTO auth.roles (role)
     VALUES ('user'), ('anonymous'), ('me');
 
 INSERT INTO auth.providers (provider)
-    VALUES ('github'), ('facebook'), ('twitter'), ('google'), ('apple'),  ('linkedin'), ('windowslive'), ('spotify');
+    VALUES ('github'), ('facebook'), ('twitter'), ('google'), ('apple'),  ('linkedin'), ('windowslive'), ('spotify'), ('pipedrive');

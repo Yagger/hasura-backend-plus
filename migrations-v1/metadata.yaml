@@ -10,6 +10,22 @@ tables:
   - name: provider
     using:
       foreign_key_constraint_on: auth_provider
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - account_id
+      - auth_provider
+      - auth_provider_unique_id
+      - provider_access_token
+      - provider_refresh_token
+      filter:
+        account:
+          user_id:
+            _eq: X-Hasura-User-Id
 - table:
     schema: auth
     name: account_roles
@@ -20,6 +36,18 @@ tables:
   - name: roleByRole
     using:
       foreign_key_constraint_on: role
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - account_id
+      - role
+      filter:
+        account:
+          user_id:
+            _eq: X-Hasura-User-Id
 - table:
     schema: auth
     name: accounts
@@ -52,6 +80,19 @@ tables:
         table:
           schema: auth
           name: refresh_tokens
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - active
+      - created_at
+      - email
+      - id
+      - updated_at
+      - user_id
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
 - table:
     schema: auth
     name: providers
@@ -100,3 +141,15 @@ tables:
           name: accounts
         column_mapping:
           id: user_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - display_name
+      - avatar_url
+      filter:
+        id:
+          _eq: X-Hasura-User-Id

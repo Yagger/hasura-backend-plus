@@ -87,6 +87,7 @@ export interface DeleteAccountData {
   delete_auth_accounts: { affected_rows: number }
 }
 interface AccountProvider {
+  id: String
   account: AccountData
 }
 
@@ -105,6 +106,15 @@ export interface InsertAccountProviderToUser {
     account: AccountData
   }
 }
+
+export type UpdateProviderTokens = UpdateProviderTokensData | { errors: unknown }
+
+interface UpdateProviderTokensData {
+  update_auth_account_providers_by_pk: {
+    updated_at: string
+  }
+}
+
 
 export interface RefreshTokenMiddleware {
   value: string | null

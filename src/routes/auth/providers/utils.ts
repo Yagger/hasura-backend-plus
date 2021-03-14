@@ -11,8 +11,8 @@ import {
   DEFAULT_USER_ROLE,
   DEFAULT_ALLOWED_USER_ROLES,
 } from '@shared/config'
-import { insertAccount, insertAccountProviderToUser, selectAccountProvider } from '@shared/queries'
-import { selectAccountByEmail } from '@shared/helpers'
+import { insertAccount, insertAccountProviderToUser, selectAccountProvider, updateProviderTokens } from '@shared/queries'
+import { selectAccountByEmail, selectAccountByUserId } from '@shared/helpers'
 import { request } from '@shared/request'
 import {
   InsertAccountData,
@@ -20,7 +20,8 @@ import {
   AccountData,
   UserData,
   RequestExtended,
-  InsertAccountProviderToUser
+  InsertAccountProviderToUser,
+  UpdateProviderTokens
 } from '@shared/types'
 import { setRefreshToken } from '@shared/cookies'
 
@@ -40,18 +41,42 @@ const manageProviderStrategy = (
   provider: string,
   transformProfile: TransformProfileFunction
 ) => async (
-  _req: RequestExtended,
-  _accessToken: string,
-  _refreshToken: string,
+  req: RequestExtended,
+  accessToken: string,
+  refreshToken: string,
   profile: Profile,
   done: VerifyCallback
 ): Promise<void> => {
   // TODO How do we handle REGISTRATION_CUSTOM_FIELDS with OAuth?
 
-  // find or create the user
-  // check if user exists, using profile.id
   const { id, email, display_name, avatar_url } = transformProfile(profile)
 
+  // If user already logged in, then add new provider account to the same user
+  if (req.permission_variables) {
+    const { 'user-id': user_id } = req.permission_variables
+    const account = await selectAccountByUserId(user_id)
+
+    // account was successfully fetched
+    // add provider and activate account
+    const insertAccountProviderToUserData = await request<InsertAccountProviderToUser>(
+      insertAccountProviderToUser,
+      {
+        account_provider: {
+          account_id: account.id,
+          auth_provider: provider,
+          auth_provider_unique_id: id,
+          provider_access_token: accessToken,
+          provider_refresh_token: refreshToken,
+        },
+        account_id: account.id
+      }
+    )
+
+    return done(null, insertAccountProviderToUserData.insert_auth_account_providers_one.account)
+  }
+
+  // find or create the user
+  // check if user exists, using profile.id   
   const hasuraData = await request<QueryAccountProviderData>(selectAccountProvider, {
     provider,
     profile_id: id
@@ -59,6 +84,12 @@ const manageProviderStrategy = (
 
   // IF user is already registered
   if (hasuraData.auth_account_providers.length > 0) {
+    const providerId = hasuraData.auth_account_providers[0].id
+    await request<UpdateProviderTokens>(updateProviderTokens, {
+      account_provider_id: providerId,
+      provider_access_token: accessToken,
+      provider_refresh_token: refreshToken,
+    })
     return done(null, hasuraData.auth_account_providers[0].account)
   }
 
@@ -78,7 +109,9 @@ const manageProviderStrategy = (
         account_provider: {
           account_id: account.id,
           auth_provider: provider,
-          auth_provider_unique_id: id
+          auth_provider_unique_id: id,
+          provider_access_token: accessToken,
+          provider_refresh_token: refreshToken,
         },
         account_id: account.id
       }
@@ -104,7 +137,9 @@ const manageProviderStrategy = (
       data: [
         {
           auth_provider: provider,
-          auth_provider_unique_id: id
+          auth_provider_unique_id: id,
+          provider_access_token: accessToken,
+          provider_refresh_token: refreshToken,
         }
       ]
     }
@@ -166,7 +201,7 @@ export const initProvider = <T extends Strategy>(
 
   const subRouter = Router()
 
-  subRouter.get('/', passport.authenticate(strategyName, { session: false }))
+  subRouter.get('/', passport.authenticate(strategyName, { session: false, accessType: 'offline', prompt: 'consent' }))
 
   const handlers = [
     passport.authenticate(strategyName, {

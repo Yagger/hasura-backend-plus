@@ -280,10 +280,25 @@ export const selectAccountProvider = gql`
         ]
       }
     ) {
+      id
       account {
         ...accountFragment
       }
     }
   }
   ${accountFragment}
+`
+
+export const updateProviderTokens = gql`
+  mutation ($account_provider_id: uuid!, $provider_access_token: String!, $provider_refresh_token: String!) {
+    update_auth_account_providers_by_pk(
+      pk_columns: {id: $account_provider_id},
+      _set: {
+        provider_access_token: $provider_access_token,
+        provider_refresh_token: $provider_refresh_token,
+      }
+    ) {
+      updated_at
+    }
+  }
 `
