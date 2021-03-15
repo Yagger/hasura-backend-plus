@@ -204,6 +204,7 @@ export const initProvider = <T extends Strategy>(
 
   const subRouter = Router()
 
+  //@ts-ignore This is to suppress the "No overload matches this call." TS error
   subRouter.get('/', passport.authenticate(strategyName, { session: false, accessType: 'offline', prompt: 'consent' }))
 
   const handlers = [

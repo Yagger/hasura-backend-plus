@@ -1,11 +1,13 @@
 import { Router } from 'express'
-import { Strategy, Profile } from 'passport-pipedrive'
 import Boom from '@hapi/boom'
 import { PROVIDERS } from '@shared/config'
 import { initProvider } from './utils'
 import { UserData } from '@shared/types'
 
-const transformProfile = ({ id, name, email, icon_url }: Profile): UserData => ({
+// password-pipedrive doesn't have corresponding @types package, so TS will error on the import syntax.
+const { Strategy } = require('passport-pipedrive')
+
+const transformProfile = ({ id, name, email, icon_url }: any): UserData => ({
     id: id.toString(),
     email,
     display_name: name,
