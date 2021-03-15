@@ -20,7 +20,6 @@ export default (router: Router): void => {
     if (!options.clientID || !options.clientSecret) {
       throw Boom.badImplementation(`Missing environment variables for Pipedrive OAuth.`)
     }
-    const scope = ["base", "deals:read", "contacts:read", "products:read"]
-    initProvider(router, 'pipedrive', Strategy, { scope, transformProfile })
+    initProvider(router, 'pipedrive', Strategy, { transformProfile })
   }
 }

@@ -58,21 +58,24 @@ const manageProviderStrategy = (
 
     // account was successfully fetched
     // add provider and activate account
-    const insertAccountProviderToUserData = await request<InsertAccountProviderToUser>(
-      insertAccountProviderToUser,
-      {
-        account_provider: {
-          account_id: account.id,
-          auth_provider: provider,
-          auth_provider_unique_id: id,
-          provider_access_token: accessToken,
-          provider_refresh_token: refreshToken,
-        },
-        account_id: account.id
-      }
-    )
-
-    return done(null, insertAccountProviderToUserData.insert_auth_account_providers_one.account)
+    try {
+        const insertAccountProviderToUserData = await request<InsertAccountProviderToUser>(
+        insertAccountProviderToUser,
+        {
+            account_provider: {
+            account_id: account.id,
+            auth_provider: provider,
+            auth_provider_unique_id: id,
+            provider_access_token: accessToken,
+            provider_refresh_token: refreshToken,
+            },
+            account_id: account.id
+        })
+        return done(null, insertAccountProviderToUserData.insert_auth_account_providers_one.account)
+    } catch (error) {
+        // Account already connected, return without changes
+        return done(null, account)
+    }
   }
 
   // find or create the user
