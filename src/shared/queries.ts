@@ -289,6 +289,18 @@ export const selectAccountProvider = gql`
   ${accountFragment}
 `
 
+export const getAccountProvider = gql`
+  query($user_id: uuid!, $provider: String!){
+    auth_account_providers(where: {_and: {account: {user_id: {_eq: $user_id}}, auth_provider: {_eq: $provider}}}) {
+      id
+      auth_provider
+      auth_provider_unique_id
+      provider_access_token
+      provider_refresh_token
+    }
+  }
+`
+
 export const updateProviderTokens = gql`
   mutation ($account_provider_id: uuid!, $provider_access_token: String!, $provider_refresh_token: String!) {
     update_auth_account_providers_by_pk(

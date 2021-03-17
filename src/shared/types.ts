@@ -89,6 +89,10 @@ export interface DeleteAccountData {
 interface AccountProvider {
   id: String
   account: AccountData
+  auth_provider: String
+  auth_provider_unique_id: String
+  provider_access_token: String
+  provider_refresh_token: String
 }
 
 export interface QueryAccountProviderData {

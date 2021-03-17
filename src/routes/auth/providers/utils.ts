@@ -2,6 +2,7 @@ import express, { Response, Router } from 'express'
 import passport, { Profile } from 'passport'
 import { VerifyCallback } from 'passport-oauth2'
 import { Strategy } from 'passport'
+import fetch from 'node-fetch'
 
 import {
   PROVIDER_SUCCESS_REDIRECT,
@@ -11,7 +12,7 @@ import {
   DEFAULT_USER_ROLE,
   DEFAULT_ALLOWED_USER_ROLES,
 } from '@shared/config'
-import { insertAccount, insertAccountProviderToUser, selectAccountProvider, updateProviderTokens } from '@shared/queries'
+import { insertAccount, insertAccountProviderToUser, selectAccountProvider, getAccountProvider, updateProviderTokens } from '@shared/queries'
 import { selectAccountByEmail, selectAccountByUserId } from '@shared/helpers'
 import { request } from '@shared/request'
 import {
@@ -187,20 +188,22 @@ export const initProvider = <T extends Strategy>(
       display_name: displayName,
       avatar_url: photos?.[0].value
     }),
+    // refreshToken = ({ clientID, clientSecret }) => ({
+        
+    // }),
     callbackMethod = 'GET',
     ...options
   } = settings
-  passport.use(
-    new strategy(
-      {
-        ...PROVIDERS[strategyName],
-        ...options,
-        callbackURL: `${SERVER_URL}/auth/providers/${strategyName}/callback`,
-        passReqToCallback: true
-      },
-      manageProviderStrategy(strategyName, transformProfile)
-    )
+  const strategyObject = new strategy(
+    {
+      ...PROVIDERS[strategyName],
+      ...options,
+      callbackURL: `${SERVER_URL}/auth/providers/${strategyName}/callback`,
+      passReqToCallback: true
+    },
+    manageProviderStrategy(strategyName, transformProfile)
   )
+  passport.use(strategyObject)
 
   const subRouter = Router()
 
@@ -220,6 +223,59 @@ export const initProvider = <T extends Strategy>(
   } else {
     subRouter.get('/callback', ...handlers)
   }
+
+  // Refresh provider token
+  subRouter.get('/refresh', async (req, res) => {
+    //@ts-ignore TS cannot find permission_variables in type definition
+    const session = req.permission_variables
+    if (!session) {
+      res.status(401)
+      return
+    }
+    let hasuraData
+    try {
+      hasuraData = await request<QueryAccountProviderData>(getAccountProvider, {
+        user_id: session['user-id'],
+        provider: strategyName
+      })
+    } catch (e) {
+      res.status(400)
+      res.send(`${strategyName} is not connected`)
+      return
+    }
+    if (hasuraData.auth_account_providers.length == 0) {
+      res.status(400)
+      res.send(`${strategyName} is not connected`)
+      return
+    }
+    const accountProvider = hasuraData.auth_account_providers[0]
+    if (!accountProvider.provider_refresh_token) {
+      res.status(400)
+      res.send(`Provider ${strategyName} did not provide refresh token`)
+      return
+    }
+    //@ts-ignore need access private property
+    const { _clientId, _clientSecret, _accessTokenUrl } = strategyObject._oauth2
+    const params = new URLSearchParams();
+    params.append('client_id', _clientId);
+    params.append('client_secret', _clientSecret);
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', accountProvider.provider_refresh_token.toString());
+    
+    const response = await fetch(_accessTokenUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      //@ts-ignore
+      body: params
+    })
+    const responseJson = await response.json()
+    await request<UpdateProviderTokens>(updateProviderTokens, {
+      account_provider_id: accountProvider.id,
+      provider_access_token: responseJson.access_token,
+      provider_refresh_token: accountProvider.provider_refresh_token,
+    })
+    return res.send(responseJson)
+  })
 
   router.use(`/${strategyName}`, subRouter)
 }
