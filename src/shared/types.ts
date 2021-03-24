@@ -119,6 +119,10 @@ interface UpdateProviderTokensData {
   }
 }
 
+export interface DeleteAccountProvidersData {
+  delete_auth_account_providers: { affected_rows: number }
+}
+
 
 export interface RefreshTokenMiddleware {
   value: string | null

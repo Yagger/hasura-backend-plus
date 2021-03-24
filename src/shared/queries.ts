@@ -314,3 +314,14 @@ export const updateProviderTokens = gql`
     }
   }
 `
+
+export const deleteAccountProvider = gql`
+  mutation ($account_id: uuid!, $provider: String!) {
+    delete_auth_account_providers(where: {_and: {
+      account_id: {_eq: $account_id},
+      auth_provider: {_eq: $provider}
+    }}) {
+      affected_rows
+    }
+  }
+`

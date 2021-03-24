@@ -12,7 +12,14 @@ import {
   DEFAULT_USER_ROLE,
   DEFAULT_ALLOWED_USER_ROLES,
 } from '@shared/config'
-import { insertAccount, insertAccountProviderToUser, selectAccountProvider, getAccountProvider, updateProviderTokens } from '@shared/queries'
+import {
+  insertAccount,
+  insertAccountProviderToUser,
+  selectAccountProvider,
+  getAccountProvider,
+  updateProviderTokens,
+  deleteAccountProvider
+} from '@shared/queries'
 import { selectAccountByEmail, selectAccountByUserId } from '@shared/helpers'
 import { request } from '@shared/request'
 import {
@@ -22,7 +29,8 @@ import {
   UserData,
   RequestExtended,
   InsertAccountProviderToUser,
-  UpdateProviderTokens
+  UpdateProviderTokens,
+  DeleteAccountProvidersData
 } from '@shared/types'
 import { setRefreshToken } from '@shared/cookies'
 
@@ -269,12 +277,39 @@ export const initProvider = <T extends Strategy>(
       body: params
     })
     const responseJson = await response.json()
+    if (response.status !== 200) {
+      res.status(response.status)
+      res.send(responseJson)
+      return
+    }
     await request<UpdateProviderTokens>(updateProviderTokens, {
       account_provider_id: accountProvider.id,
       provider_access_token: responseJson.access_token,
       provider_refresh_token: accountProvider.provider_refresh_token,
     })
     return res.send(responseJson)
+  })
+
+  subRouter.get('/disconnect', async (req, res) => {
+    //@ts-ignore TS cannot find permission_variables in type definition
+    const session = req.permission_variables
+    if (!session) {
+      res.status(401)
+      return
+    }
+    const user_id = session['user-id']
+    const account = await selectAccountByUserId(user_id)
+    try {
+      await request<DeleteAccountProvidersData>(deleteAccountProvider, {
+        account_id: account.id,
+        provider: strategyName
+      })
+    } catch (e) {
+      res.status(400)
+      res.send(`Failed to delete ${strategyName} connection`)
+      return
+    }
+    res.send("OK")
   })
 
   router.use(`/${strategyName}`, subRouter)
